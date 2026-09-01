@@ -1,2 +1,2 @@
 # what-to-eat
-Picks a restaurant for you if you don't know what to eat
+Can't decide what to eat? Just follow the instructions and have us choose for you!
