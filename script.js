@@ -48,36 +48,33 @@ out center tags;`;
 }
 
 async function fetchRestaurants(lat, lng, radius, types) {
-  const res = await fetch(OVERPASS_URL, {
+  const res = await fetch('/api/data', {
     method: 'POST',
-    headers: { 'Content-Type': 'text/plain' },
-    body: buildQuery(lat, lng, radius, types)
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lat, lng, radius, types })
   });
 
   if (!res.ok) {
-    throw new Error(`Overpass error ${res.status}`);
+    throw new Error(`Places error ${res.status}`);
   }
 
   const data = await res.json();
 
-  return (data.elements || [])
-    .map(el => {
-      const elLat = el.lat ?? el.center?.lat;
-      const elLon = el.lon ?? el.center?.lon;
-      const tags = el.tags || {};
-      if (elLat == null || elLon == null || !tags.name) return null;
+  return (data.features || [])
+    .map(f => {
+      const props = f.properties;
+      if (!props?.name) return null;
       return {
-        name: tags.name,
-        amenity: tags.amenity,
-        cuisine: tags.cuisine,
-        address: [tags['addr:housenumber'], tags['addr:street']].filter(Boolean).join(' '),
-        distance: distanceMeters(lat, lng, elLat, elLon)
+        name: props.name,
+        amenity: props.categories?.find(c => c.startsWith('catering.'))?.split('.')[1],
+        cuisine: props.catering?.cuisine,
+        address: props.address_line2 || props.formatted,
+        distance: props.distance
       };
     })
     .filter(Boolean)
     .sort((a, b) => a.distance - b.distance);
 }
-
 function renderRestaurants(places) {
   listEl.innerHTML = '';
 

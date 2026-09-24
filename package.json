@@ -1,0 +1,15 @@
+{
+  "name": "what-to-eat",
+  "version": "1.0.0",
+  "description": "Can't decide what to eat? Just follow the instructions and have us choose for you!",
+  "main": "script.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "vercel": "^59.26.0"
+  }
+}
