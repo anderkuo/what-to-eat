@@ -1,6 +1,7 @@
 const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
 const MILES_TO_METERS = 1609.34;
 const SEARCH_COOLDOWN_MS = 10000;
+const VOLUME_KEY = 'whatToEat.volume';
 
 const statusEl = document.getElementById('restaurants-status');
 const listEl = document.getElementById('restaurants-list');
@@ -8,6 +9,11 @@ const emptyEl = document.getElementById('restaurants-empty');
 const radiusSlider = document.getElementById('radius-slider');
 const radiusValueEl = document.getElementById('radius-value');
 const searchBtn = document.getElementById('search-btn');
+const settingsBtn = document.getElementById('settings-btn');
+const settingsDialog = document.getElementById('settings-dialog');
+const settingsClose = document.getElementById('settings-close');
+const volumeSlider = document.getElementById('volume-slider');
+const volumeValueEl = document.getElementById('volume-value');
 
 function setStatus(msg) {
   statusEl.textContent = msg;
@@ -153,11 +159,11 @@ function runSearch() {
     }
   );
 }
- 
+
 function startCooldown() {
   let secondsLeft = SEARCH_COOLDOWN_MS / 1000;
   searchBtn.textContent = `Wait ${secondsLeft}s`;
- 
+
   const interval = setInterval(() => {
     secondsLeft -= 1;
     if (secondsLeft <= 0) {
@@ -169,6 +175,46 @@ function startCooldown() {
     }
   }, 1000);
 }
+
+/* Settings menu */
+
+function loadVolume() {
+  try {
+    const saved = localStorage.getItem(VOLUME_KEY);
+    if (saved !== null) return Math.min(100, Math.max(0, Number(saved) || 0));
+  } catch {
+    // Storage can be blocked; fall back to the default.
+  }
+  return 50;
+}
+
+volumeSlider.value = loadVolume();
+volumeValueEl.textContent = volumeSlider.value;
+
+volumeSlider.addEventListener('input', () => {
+  volumeValueEl.textContent = volumeSlider.value;
+  try {
+    localStorage.setItem(VOLUME_KEY, volumeSlider.value);
+  } catch {
+    // Not saving is fine; the slider still works for this visit.
+  }
+});
+
+settingsBtn.addEventListener('click', () => settingsDialog.showModal());
+settingsClose.addEventListener('click', () => settingsDialog.close());
+
+// A click on the dimmed area outside the box lands on the <dialog> itself
+settingsDialog.addEventListener('click', (e) => {
+  if (e.target === settingsDialog) settingsDialog.close();
+});
+
+// Stop wheel and touch scrolling behind the open menu. The scrollbar itself stays
+// in place, so the page doesn't shift when the menu opens.
+function blockScrollWhileOpen(e) {
+  if (settingsDialog.open && !e.target.closest('.settings-box')) e.preventDefault();
+}
+document.addEventListener('wheel', blockScrollWhileOpen, { passive: false });
+document.addEventListener('touchmove', blockScrollWhileOpen, { passive: false });
 
 radiusSlider.addEventListener('input', () => {
   radiusValueEl.textContent = radiusSlider.value;

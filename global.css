@@ -19,8 +19,8 @@
 
 /* Scrollbar */
 ::-webkit-scrollbar {
-  width: 1rem;
-  height: 1rem;
+  width: 0.625rem;
+  height: 0.625rem;
 }
 
 ::-webkit-scrollbar-track {
@@ -40,12 +40,12 @@
 /* Up and down arrow buttons at the ends of the bar */
 ::-webkit-scrollbar-button:single-button:vertical {
   display: block;
-  width: 1rem;
-  height: 1rem;
+  width: 0.625rem;
+  height: 0.625rem;
   background-color: var(--ink);
   background-repeat: no-repeat;
   background-position: center;
-  background-size: 0.625rem;
+  background-size: 0.4375rem;
 }
 
 ::-webkit-scrollbar-button:single-button:vertical:decrement {
@@ -64,6 +64,7 @@
 @supports not selector(::-webkit-scrollbar) {
   html {
     scrollbar-color: var(--pink) var(--ink);
+    scrollbar-width: thin;
   }
 }
 
@@ -85,7 +86,7 @@ section {
 }
 
 header {
-  padding-top: 2.5rem;
+  padding-top: 4.25rem;
 }
 
 section {
@@ -193,7 +194,8 @@ h1 {
   font-weight: 700;
 }
 
-#radius-value {
+#radius-value,
+#volume-value {
   display: inline-block;
   min-width: 1.75rem;
   padding: 0 0.4rem;
@@ -396,6 +398,102 @@ fieldset.control-group label:has(input:focus-visible) {
 #restaurants-empty {
   margin: 1rem 0 0;
   font-weight: 700;
+}
+
+/* Settings button (top left) and settings menu */
+.settings-btn {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.5rem;
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  padding: 0;
+  border: var(--stroke);
+  border-radius: 50%;
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: 3px 3px 0 var(--ink);
+  cursor: pointer;
+  transition: transform 0.08s, box-shadow 0.08s, background-color 0.12s;
+}
+
+.settings-btn:hover {
+  background: var(--mint);
+}
+
+.settings-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.settings-btn:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 3px;
+}
+
+.settings-dialog {
+  width: min(22rem, calc(100vw - 2.5rem));
+  padding: 0;
+  border: var(--stroke);
+  border-radius: 1.5rem;
+  background: var(--white);
+  color: var(--ink);
+  box-shadow: 6px 6px 0 var(--ink);
+}
+
+.settings-dialog::backdrop {
+  background: rgba(43, 27, 74, 0.6);
+}
+
+.settings-box {
+  padding: 1.5rem;
+}
+
+.settings-box h2 {
+  margin: 0 0 1.5rem;
+  font-family: var(--font-head);
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+.setting-row {
+  margin-bottom: 1.75rem;
+}
+
+.setting-row label {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-weight: 700;
+}
+
+.settings-close {
+  width: 100%;
+  padding: 0.75rem 1.5rem;
+  border: var(--stroke);
+  border-radius: 1rem;
+  background: var(--pink);
+  color: var(--ink);
+  font: 600 1.125rem/1 var(--font-head);
+  box-shadow: 4px 4px 0 var(--ink);
+  cursor: pointer;
+  transition: transform 0.08s, box-shadow 0.08s;
+}
+
+.settings-close:hover {
+  background: #ff7aa2;
+}
+
+.settings-close:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0 var(--ink);
+}
+
+.settings-close:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 4px;
 }
 
 [hidden] {
