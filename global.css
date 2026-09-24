@@ -402,7 +402,8 @@ fieldset.control-group label:has(input:focus-visible) {
 
 /* Settings button (top left) and settings menu */
 .settings-btn {
-  position: absolute;
+  position: fixed;
+  z-index: 10;
   top: 0.5rem;
   left: 0.5rem;
   display: grid;
