@@ -4,31 +4,40 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>What to Eat?</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400..700&family=Figtree:wght@400..700&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="global.css" />
   </head>
   <body>
     <header id="title">
       <h1>Restaurants Near Me</h1>
+      <p class="lede">Pick how far you'll travel and what you're craving.</p>
     </header>
     <section id="restaurants" aria-labelledby="restaurants-heading">
       <h2 id="restaurants-heading">Nearby restaurants</h2>
 
-      <div class="control-group">
-        <label for="radius-slider">Search radius: <span id="radius-value">5</span> miles</label>
-        <input type="range" id="radius-slider" min="1" max="10" step="1" value="5" />
-      </div>
- 
-      <fieldset class="control-group">
-        <legend>Place types</legend>
-        <label><input type="checkbox" name="place-type" value="restaurant" checked /> Restaurants</label>
-        <label><input type="checkbox" name="place-type" value="fast_food" /> Fast food</label>
-        <label><input type="checkbox" name="place-type" value="cafe" /> Cafes</label>
-      </fieldset>
- 
-      <button type="button" id="search-btn">Search</button>
+      <div class="controls">
+        <div class="control-group">
+          <label for="radius-slider">Search radius: <span id="radius-value">5</span> miles</label>
+          <input type="range" id="radius-slider" min="1" max="10" step="1" value="5" />
+        </div>
 
-      <p id="restaurants-status"></p>
-      
+        <fieldset class="control-group">
+          <legend>Place types</legend>
+          <label><input type="checkbox" name="place-type" value="restaurant" checked /> Restaurants</label>
+          <label><input type="checkbox" name="place-type" value="fast_food" /> Fast food</label>
+          <label><input type="checkbox" name="place-type" value="cafe" /> Cafes</label>
+        </fieldset>
+
+        <button type="button" id="search-btn">Search</button>
+      </div>
+
+      <p id="restaurants-status" role="status"></p>
+
       <ul id="restaurants-list">
         <!-- restaurant items get inserted here by script.js -->
       </ul>
@@ -36,7 +45,18 @@
       <p id="restaurants-empty" hidden>No restaurants found nearby.</p>
     </section>
 
+    <footer class="site-footer">
+      <p class="footer-line">
+        <span class="footer-brand">What to Eat?</span>
+        <span>&copy; 2026</span>
+      </p>
+      <p class="fine-print">
+        Place data from
+        <a href="https://www.openstreetmap.org/copyright">OpenStreetMap contributors</a>,
+        provided by <a href="https://www.geoapify.com/">Geoapify</a>.
+      </p>
+    </footer>
+
     <script src="script.js"></script>
-    
   </body>
 </html>
