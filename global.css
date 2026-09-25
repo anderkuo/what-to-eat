@@ -76,6 +76,9 @@ body {
   font-family: var(--font-body);
   font-size: 1rem;
   line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
 }
 
 header,
@@ -100,6 +103,7 @@ section {
   background: var(--ink);
   color: var(--white);
   text-align: center;
+  flex-shrink: 0;
 }
 
 .footer-line {
@@ -312,7 +316,7 @@ fieldset.control-group label:has(input:focus-visible) {
 /* Search button: presses into its shadow when clicked */
 #search-btn {
   width: 100%;
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.75rem;
   padding: 0.9rem 1.5rem;
   border: var(--stroke);
   border-radius: 1rem;
@@ -513,4 +517,59 @@ fieldset.control-group label:has(input:focus-visible) {
   * {
     transition: none !important;
   }
+}
+
+#restaurants-list li.picked {
+  position: relative;
+  background: var(--ink);
+  color: var(--white);
+  border-width: 3.5px;
+  transform: rotate(0deg) scale(1.03);
+}
+
+#restaurants-list li.picked strong,
+#restaurants-list li.picked p {
+  color: var(--white);
+}
+
+#restaurants-list li.picked a {
+  color: var(--white);
+  text-decoration-color: var(--white);
+}
+
+#restaurants-list li.picked::before {
+  content: "Today's pick";
+  display: inline-block;
+  margin-bottom: 0.5rem;
+  padding: 0.2rem 0.7rem;
+  border: var(--stroke);
+  border-radius: 999px;
+  background: var(--pink);
+  color: var(--ink);
+  font-family: var(--font-head);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+#randomize-btn {
+  width: 100%;
+  margin-bottom: 0.25rem;
+  padding: 0.9rem 1.5rem;
+  border: var(--stroke);
+  border-radius: 1rem;
+  background: var(--pink);
+  color: var(--ink);
+  font: 600 1.25rem/1 var(--font-head);
+  box-shadow: 5px 5px 0 var(--ink);
+  cursor: pointer;
+  transition: transform 0.08s, box-shadow 0.08s;
+}
+
+html, body {
+  height: 100%;
+}
+
+#restaurants {
+  flex: 1;
+  width: 100%;
 }

@@ -9,7 +9,6 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Missing lat, lng, radius, or types' });
   }
 
-  // Map your amenity types to Geoapify categories
   const categoryMap = {
     restaurant: 'catering.restaurant',
     fast_food: 'catering.fast_food',
@@ -21,7 +20,7 @@ export default async function handler(req, res) {
   url.searchParams.set('categories', categories);
   url.searchParams.set('filter', `circle:${lng},${lat},${radius}`);
   url.searchParams.set('bias', `proximity:${lng},${lat}`);
-  url.searchParams.set('limit', '50');
+  url.searchParams.set('limit', '100');
   url.searchParams.set('apiKey', process.env.GEOAPIFY_KEY);
 
   try {

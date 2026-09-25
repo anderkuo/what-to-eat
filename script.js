@@ -1,4 +1,3 @@
-const OVERPASS_URL = 'https://overpass-api.de/api/interpreter';
 const MILES_TO_METERS = 1609.34;
 const SEARCH_COOLDOWN_MS = 10000;
 const VOLUME_KEY = 'whatToEat.volume';
@@ -81,6 +80,18 @@ async function fetchRestaurants(lat, lng, radius, types) {
     .filter(Boolean)
     .sort((a, b) => a.distance - b.distance);
 }
+
+function formatLabel(str) {
+  if (!str) return '';
+  return str
+    .replace(/_/g, ' ')
+    .split(/[;,]/)
+    .map(part => part.trim())
+    .filter(Boolean)
+    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(', ');
+}
+
 function renderRestaurants(places) {
   listEl.innerHTML = '';
 
@@ -99,8 +110,8 @@ function renderRestaurants(places) {
     li.appendChild(name);
 
     const details = [
-      place.amenity ? place.amenity.replace('_', ' ') : null,
-      place.cuisine,
+      place.amenity ? formatLabel(place.amenity) : null,
+      place.cuisine ? formatLabel(place.cuisine) : null,
       place.address,
       metersToText(place.distance)
     ].filter(Boolean).join(' · ');
@@ -114,6 +125,8 @@ function renderRestaurants(places) {
     listEl.appendChild(li);
   });
 }
+
+let currentResults = [];
 
 function runSearch() {
   const types = getSelectedTypes();
@@ -144,6 +157,7 @@ function runSearch() {
           radiusMeters,
           types
         );
+        currentResults = places;
         setStatus(places.length ? `${places.length} found` : '');
         renderRestaurants(places);
       } catch (err) {
@@ -159,6 +173,34 @@ function runSearch() {
     }
   );
 }
+
+const randomizeBtn = document.getElementById('randomize-btn');
+
+function pickRandom() {
+  if (!currentResults.length) {
+    setStatus('Search first, then I can pick one for you.');
+    return;
+  }
+
+  const choice = currentResults[Math.floor(Math.random() * currentResults.length)];
+  highlightPick(choice);
+}
+
+function highlightPick(place) {
+  listEl.querySelectorAll('li').forEach(li => li.classList.remove('picked'));
+
+  const items = Array.from(listEl.querySelectorAll('li'));
+  const match = items.find(li => li.querySelector('strong')?.textContent === place.name);
+
+  if (match) {
+    match.classList.add('picked');
+    match.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  }
+
+  setStatus(`Today's pick: ${place.name}`);
+}
+
+randomizeBtn.addEventListener('click', pickRandom);
 
 function startCooldown() {
   let secondsLeft = SEARCH_COOLDOWN_MS / 1000;
