@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   url.searchParams.set('categories', categories);
   url.searchParams.set('filter', `circle:${lng},${lat},${radius}`);
   url.searchParams.set('bias', `proximity:${lng},${lat}`);
-  url.searchParams.set('limit', '100');
+  url.searchParams.set('limit', '60');
   url.searchParams.set('apiKey', process.env.GEOAPIFY_KEY);
 
   try {

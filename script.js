@@ -93,7 +93,9 @@ function formatLabel(str) {
     .join(', ');
 }
 
-function renderRestaurants(places) {
+function renderRestaurants(places, options = {}) {
+  const { hideDistance = false } = options;
+
   listEl.innerHTML = '';
 
   if (!places.length) {
@@ -114,7 +116,7 @@ function renderRestaurants(places) {
       place.amenity ? formatLabel(place.amenity) : null,
       place.cuisine ? formatLabel(place.cuisine) : null,
       place.address,
-      metersToText(place.distance)
+      hideDistance ? null : metersToText(place.distance)
     ].filter(Boolean).join(' · ');
 
     if (details) {
@@ -128,6 +130,24 @@ function renderRestaurants(places) {
 }
 
 let currentResults = [];
+let userCoords = null;
+const locationInput = document.getElementById('location-input');
+const useMyLocationBtn = document.getElementById('use-my-location-btn');
+
+async function geocodeCity(city) {
+  const res = await fetch('/api/geocode', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ city })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Geocode error ${res.status}`);
+  }
+
+  return res.json();
+}
 
 function runSearch() {
   const types = getSelectedTypes();
@@ -138,43 +158,82 @@ function runSearch() {
     return;
   }
 
+  const cityValue = locationInput.value.trim();
+  searchBtn.disabled = true;
+  useMyLocationBtn.disabled = true;
+  randomizeBtn.disabled = true;
+
+  if (cityValue) {
+    searchByCity(cityValue, types);
+  } else if (userCoords) {
+    searchByCoords(userCoords.lat, userCoords.lng, types);
+  } else {
+    setStatus('Enter a city or use your location first.');
+    searchBtn.disabled = false;
+    useMyLocationBtn.disabled = false;
+    return;
+  }
+}
+
+async function searchByCoords(lat, lng, types, options = {}) {
+  setStatus('Searching nearby…');
+  const radiusMeters = Number(radiusSlider.value) * MILES_TO_METERS;
+
+  try {
+    const places = await fetchRestaurants(lat, lng, radiusMeters, types);
+    currentResults = places;
+    updateRandomizeBtnState();
+    setStatus(places.length ? `${places.length} found` : '');
+    renderRestaurants(places, options);
+  } catch (err) {
+    console.error(err);
+    setStatus('Could not load restaurants. Please try again.');
+  }
+
+  startCooldown();
+}
+
+async function searchByCity(city, types) {
+  setStatus('Looking up city…');
+
+  try {
+    const { lat, lng } = await geocodeCity(city);
+    await searchByCoords(lat, lng, types, { hideDistance: true });
+    userCoords = null;
+    useMyLocationBtn.disabled = false;
+    useMyLocationBtn.textContent = 'Use my location';
+  } catch (err) {
+    console.error(err);
+    setStatus(err.message === 'City not found' ? 'City not found. Try another search.' : 'Could not load restaurants. Please try again.');
+    startCooldown();
+  }
+}
+
+useMyLocationBtn.addEventListener('click', () => {
   if (!navigator.geolocation) {
     setStatus('Geolocation is not supported in this browser.');
     return;
   }
 
-  setStatus('Getting your location…');
-  searchBtn.disabled = true;
+  useMyLocationBtn.disabled = true;
+  useMyLocationBtn.textContent = 'Getting location…';
+  randomizeBtn.disabled = true;
 
   navigator.geolocation.getCurrentPosition(
-    async (pos) => {
-      setStatus('Searching nearby…');
-      const radiusMeters = Number(radiusSlider.value) * MILES_TO_METERS;
-
-      try {
-        const places = await fetchRestaurants(
-          pos.coords.latitude,
-          pos.coords.longitude,
-          radiusMeters,
-          types
-        );
-        currentResults = places;
-        setStatus(places.length ? `${places.length} found` : '');
-        renderRestaurants(places);
-      } catch (err) {
-        console.error(err);
-        setStatus('Could not load restaurants. Please try again.');
-      }
-
-      startCooldown();
+    (pos) => {
+      userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      locationInput.value = '';
+      useMyLocationBtn.textContent = 'Location used';
+      updateRandomizeBtnState();
     },
     (err) => {
       setStatus('Could not get your location: ' + err.message);
-      startCooldown();
+      useMyLocationBtn.disabled = false;
+      useMyLocationBtn.textContent = 'Use my location';
+      updateRandomizeBtnState();
     }
   );
-}
-
+});
 const randomizeBtn = document.getElementById('randomize-btn');
 
 function pickRandom() {
@@ -218,6 +277,7 @@ function startCooldown() {
     }
   }, 1000);
 }
+
 
 /* Settings menu */
 
@@ -311,4 +371,14 @@ function blockScrollWhileOpen(e) {
 document.addEventListener('wheel', blockScrollWhileOpen, { passive: false });
 document.addEventListener('touchmove', blockScrollWhileOpen, { passive: false });
 
+radiusSlider.addEventListener('input', () => {
+  radiusValueEl.textContent = radiusSlider.value;
+});
+
 searchBtn.addEventListener('click', runSearch);
+
+function updateRandomizeBtnState() {
+  randomizeBtn.disabled = currentResults.length === 0;
+}
+
+updateRandomizeBtnState();

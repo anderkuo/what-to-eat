@@ -594,6 +594,14 @@ fieldset.control-group label:has(input:focus-visible) {
   transition: transform 0.08s, box-shadow 0.08s;
 }
 
+#randomize-btn:disabled {
+  border-style: dashed;
+  background: var(--white);
+  color: var(--muted);
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
 html, body {
   height: 100%;
 }
@@ -601,4 +609,47 @@ html, body {
 #restaurants {
   flex: 1;
   width: 100%;
+}
+
+.location-row {
+  display: flex;
+  gap: 0.5rem;
+}
+
+#location-input {
+  flex: 1;
+  padding: 0.6rem 0.9rem;
+  border: var(--stroke);
+  border-radius: 0.75rem;
+  font: 500 1rem var(--font-body);
+}
+
+#location-input:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+#use-my-location-btn {
+  padding: 0.6rem 0.9rem;
+  border: var(--stroke);
+  border-radius: 0.75rem;
+  background: var(--mint);
+  font: 600 1rem var(--font-head);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+#use-my-location-btn:hover:not(:disabled) {
+  background: #a3e8c8;
+}
+
+#use-my-location-btn:disabled {
+  border-style: dashed;
+  background: var(--white);
+  color: var(--muted);
+  cursor: not-allowed;
+}
+
+#use-my-location-btn:hover {
+  background: #a3e8c8;
 }
