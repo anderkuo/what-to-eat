@@ -191,6 +191,7 @@ h1 {
 }
 
 .control-group > label,
+.control-group > .field-label,
 .control-group legend {
   display: block;
   margin-bottom: 0.75rem;
@@ -198,15 +199,43 @@ h1 {
   font-weight: 700;
 }
 
-#radius-value,
-#volume-value {
+.value-input {
   display: inline-block;
-  min-width: 1.75rem;
-  padding: 0 0.4rem;
+  padding: 0 0.3rem;
   border: var(--stroke);
   border-radius: 0.5rem;
   background: var(--mint);
+  color: var(--ink);
+  font: inherit;
+  font-weight: 700;
   text-align: center;
+}
+
+#radius-value {
+  width: 2.75rem;
+  margin: 0 0.15rem;
+}
+
+#volume-value {
+  width: 3.25rem;
+  margin: 0 0.15rem;
+}
+
+/* Hide the browser's built-in up/down number spinner so it matches the rest of the theme */
+.value-input::-webkit-outer-spin-button,
+.value-input::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.value-input {
+  -moz-appearance: textfield;
+  appearance: textfield;
+}
+
+.value-input:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
 }
 
 /* Range slider */
@@ -476,7 +505,7 @@ fieldset.control-group label:has(input:focus-visible) {
   margin-bottom: 1.75rem;
 }
 
-.setting-row label {
+.setting-row .field-label {
   display: block;
   margin-bottom: 0.75rem;
   font-weight: 700;

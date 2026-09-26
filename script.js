@@ -7,6 +7,7 @@ const listEl = document.getElementById('restaurants-list');
 const emptyEl = document.getElementById('restaurants-empty');
 const radiusSlider = document.getElementById('radius-slider');
 const radiusValueEl = document.getElementById('radius-value');
+const radiusUnitEl = document.getElementById('radius-unit');
 const searchBtn = document.getElementById('search-btn');
 const settingsBtn = document.getElementById('settings-btn');
 const settingsDialog = document.getElementById('settings-dialog');
@@ -230,17 +231,69 @@ function loadVolume() {
   return 50;
 }
 
-volumeSlider.value = loadVolume();
-volumeValueEl.textContent = volumeSlider.value;
+// Rounds to the nearest step and keeps the result inside [min, max]. Does
+// not handle invalid input - the caller checks for that first.
+function clampToStep(value, min, max, step) {
+  const snapped = Math.round((value - min) / step) * step + min;
+  return Math.min(max, Math.max(min, snapped));
+}
 
-volumeSlider.addEventListener('input', () => {
-  volumeValueEl.textContent = volumeSlider.value;
+// Keeps a <input type="range"> and a <input type="number"> showing the same
+// value. Dragging the slider updates the number box immediately. Typing in
+// the number box is left alone until the user commits it (blur or Enter).
+// A committed value that's a real number gets clamped to min/max/step; an
+// empty box or something unparseable falls back to the last valid value
+// instead of snapping to the minimum.
+function linkSliderAndNumber(slider, numberInput, onChange) {
+  const min = Number(slider.min);
+  const max = Number(slider.max);
+  const step = Number(slider.step) || 1;
+  let lastValid = Number(slider.value);
+
+  function setValue(v) {
+    lastValid = v;
+    slider.value = v;
+    numberInput.value = v;
+    if (onChange) onChange(v);
+  }
+
+  slider.addEventListener('input', () => setValue(Number(slider.value)));
+
+  function commit() {
+    const typed = numberInput.value.trim();
+    const parsed = Number(typed);
+    const value = typed === '' || Number.isNaN(parsed)
+      ? lastValid
+      : clampToStep(parsed, min, max, step);
+    setValue(value);
+  }
+
+  numberInput.addEventListener('change', commit);
+  numberInput.addEventListener('blur', commit);
+  numberInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') numberInput.blur();
+  });
+}
+
+function updateRadiusUnit(v) {
+  radiusUnitEl.textContent = v === 1 ? 'mile' : 'miles';
+}
+
+linkSliderAndNumber(radiusSlider, radiusValueEl, updateRadiusUnit);
+
+radiusSlider.value = radiusValueEl.value;
+updateRadiusUnit(Number(radiusSlider.value));
+
+linkSliderAndNumber(volumeSlider, volumeValueEl, (v) => {
   try {
-    localStorage.setItem(VOLUME_KEY, volumeSlider.value);
+    localStorage.setItem(VOLUME_KEY, v);
   } catch {
     // Not saving is fine; the slider still works for this visit.
   }
 });
+
+volumeSlider.value = loadVolume();
+volumeValueEl.value = volumeSlider.value;
 
 settingsBtn.addEventListener('click', () => settingsDialog.showModal());
 settingsClose.addEventListener('click', () => settingsDialog.close());
@@ -257,9 +310,5 @@ function blockScrollWhileOpen(e) {
 }
 document.addEventListener('wheel', blockScrollWhileOpen, { passive: false });
 document.addEventListener('touchmove', blockScrollWhileOpen, { passive: false });
-
-radiusSlider.addEventListener('input', () => {
-  radiusValueEl.textContent = radiusSlider.value;
-});
 
 searchBtn.addEventListener('click', runSearch);
