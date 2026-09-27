@@ -130,7 +130,12 @@ function renderRestaurants(places, options = {}) {
 }
 
 let currentResults = [];
+
+// Coordinates from "Use my location", kept only while the city box still
+// shows the place they point to. Any edit to the box invalidates them
+// (see invalidateLocationLock), so a search always matches what's on screen.
 let userCoords = null;
+
 const locationInput = document.getElementById('location-input');
 const useMyLocationBtn = document.getElementById('use-my-location-btn');
 const locationClearBtn = document.getElementById('location-clear-btn');
@@ -139,11 +144,25 @@ function updateLocationClearVisibility() {
   locationClearBtn.hidden = locationInput.value.length === 0;
 }
 
-locationInput.addEventListener('input', updateLocationClearVisibility);
+// Re-enables "Use my location" and drops the stored coordinates once the
+// city box no longer reflects them, i.e. the user typed in it or cleared it.
+function invalidateLocationLock() {
+  userCoords = null;
+  if (useMyLocationBtn.disabled) {
+    useMyLocationBtn.disabled = false;
+    useMyLocationBtn.textContent = 'Use my location';
+  }
+}
+
+locationInput.addEventListener('input', () => {
+  updateLocationClearVisibility();
+  invalidateLocationLock();
+});
 
 locationClearBtn.addEventListener('click', () => {
   locationInput.value = '';
   updateLocationClearVisibility();
+  invalidateLocationLock();
   locationInput.focus();
 });
 
@@ -162,6 +181,22 @@ async function geocodeCity(city) {
   return res.json();
 }
 
+async function reverseGeocode(lat, lng) {
+  const res = await fetch('/api/reverse-geocode', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ lat, lng })
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Reverse geocode error ${res.status}`);
+  }
+
+  const data = await res.json();
+  return data.city;
+}
+
 function runSearch() {
   const types = getSelectedTypes();
   if (!types.length) {
@@ -172,20 +207,22 @@ function runSearch() {
   }
 
   const cityValue = locationInput.value.trim();
+  if (!cityValue) {
+    setStatus('No city entered.');
+    return;
+  }
+
   searchBtn.disabled = true;
   useMyLocationBtn.disabled = true;
   randomizeBtn.disabled = true;
 
-  if (cityValue) {
-    searchByCity(cityValue, types);
-  } else if (userCoords) {
+  // userCoords is only ever set while the box still shows the place it
+  // points to (see invalidateLocationLock), so it's safe to prefer here
+  // for the more precise, distance-showing search.
+  if (userCoords) {
     searchByCoords(userCoords.lat, userCoords.lng, types);
   } else {
-    setStatus('Enter a city or use your location first.');
-    searchBtn.disabled = false;
-    useMyLocationBtn.disabled = false;
-    updateRandomizeBtnState();
-    return;
+    searchByCity(cityValue, types);
   }
 }
 
@@ -234,11 +271,25 @@ useMyLocationBtn.addEventListener('click', () => {
   randomizeBtn.disabled = true;
 
   navigator.geolocation.getCurrentPosition(
-    (pos) => {
-      userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-      locationInput.value = '';
-      updateLocationClearVisibility();
-      useMyLocationBtn.textContent = 'Location used';
+    async (pos) => {
+      const lat = pos.coords.latitude;
+      const lng = pos.coords.longitude;
+
+      try {
+        const city = await reverseGeocode(lat, lng);
+        userCoords = { lat, lng };
+        locationInput.value = city;
+        updateLocationClearVisibility();
+        useMyLocationBtn.textContent = 'Location used';
+        // Stays disabled/grayed out until the city box is edited or
+        // cleared - see invalidateLocationLock.
+      } catch (err) {
+        console.error(err);
+        setStatus('Could not identify your city. Please try again.');
+        useMyLocationBtn.disabled = false;
+        useMyLocationBtn.textContent = 'Use my location';
+      }
+
       updateRandomizeBtnState();
     },
     (err) => {
