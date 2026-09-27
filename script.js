@@ -144,6 +144,13 @@ function updateLocationClearVisibility() {
   locationClearBtn.hidden = locationInput.value.length === 0;
 }
 
+// Search stays grayed out until there's a city in the box. Called after
+// every place that can change locationInput.value, whether the user typed
+// it or a click set it programmatically (which doesn't fire 'input').
+function updateSearchBtnState() {
+  searchBtn.disabled = locationInput.value.trim().length === 0;
+}
+
 // Re-enables "Use my location" and drops the stored coordinates once the
 // city box no longer reflects them, i.e. the user typed in it or cleared it.
 function invalidateLocationLock() {
@@ -157,12 +164,14 @@ function invalidateLocationLock() {
 locationInput.addEventListener('input', () => {
   updateLocationClearVisibility();
   invalidateLocationLock();
+  updateSearchBtnState();
 });
 
 locationClearBtn.addEventListener('click', () => {
   locationInput.value = '';
   updateLocationClearVisibility();
   invalidateLocationLock();
+  updateSearchBtnState();
   locationInput.focus();
 });
 
@@ -280,6 +289,7 @@ useMyLocationBtn.addEventListener('click', () => {
         userCoords = { lat, lng };
         locationInput.value = city;
         updateLocationClearVisibility();
+        updateSearchBtnState();
         useMyLocationBtn.textContent = 'Location used';
         // Stays disabled/grayed out until the city box is edited or
         // cleared - see invalidateLocationLock.
@@ -336,7 +346,7 @@ function startCooldown() {
     secondsLeft -= 1;
     if (secondsLeft <= 0) {
       clearInterval(interval);
-      searchBtn.disabled = false;
+      updateSearchBtnState();
       searchBtn.textContent = 'Search';
     } else {
       searchBtn.textContent = `Wait ${secondsLeft}s`;
@@ -448,3 +458,4 @@ function updateRandomizeBtnState() {
 }
 
 updateRandomizeBtnState();
+updateSearchBtnState();

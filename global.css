@@ -177,6 +177,9 @@ h1 {
 
 /* Controls panel */
 .controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
   padding: 1.5rem;
   border: var(--stroke);
   border-radius: 1.5rem;
@@ -185,7 +188,7 @@ h1 {
 }
 
 .control-group {
-  margin: 0 0 1.5rem;
+  margin: 0;
   padding: 0;
   border: 0;
 }
@@ -344,8 +347,10 @@ fieldset.control-group label:has(input:focus-visible) {
 
 /* Search button: presses into its shadow when clicked */
 #search-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  margin-bottom: 0.75rem;
   padding: 0.9rem 1.5rem;
   border: var(--stroke);
   border-radius: 1rem;
@@ -581,8 +586,10 @@ fieldset.control-group label:has(input:focus-visible) {
 }
 
 #randomize-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
   width: 100%;
-  margin-bottom: 0.25rem;
   padding: 0.9rem 1.5rem;
   border: var(--stroke);
   border-radius: 1rem;
@@ -599,6 +606,7 @@ fieldset.control-group label:has(input:focus-visible) {
   background: var(--white);
   color: var(--muted);
   box-shadow: none;
+  transform: translate(5px, 5px);
   cursor: not-allowed;
 }
 
