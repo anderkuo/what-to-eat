@@ -616,15 +616,50 @@ html, body {
   gap: 0.5rem;
 }
 
-#location-input {
+.location-input-wrap {
+  position: relative;
   flex: 1;
-  padding: 0.6rem 0.9rem;
+  display: flex;
+}
+
+#location-input {
+  width: 100%;
+  padding: 0.6rem 2.25rem 0.6rem 0.9rem;
   border: var(--stroke);
   border-radius: 0.75rem;
   font: 500 1rem var(--font-body);
 }
 
 #location-input:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+.location-clear-btn {
+  position: absolute;
+  top: 50%;
+  right: 0.4rem;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 1.5rem;
+  height: 1.5rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--muted);
+  font-size: 1.375rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.location-clear-btn:hover {
+  background: var(--pink);
+  color: var(--ink);
+}
+
+.location-clear-btn:focus-visible {
   outline: 3px solid var(--ink);
   outline-offset: 2px;
 }

@@ -31,7 +31,10 @@
         <div class="control-group">
           <label for="location-input">Search near</label>
           <div class="location-row">
-            <input type="text" id="location-input" placeholder="Enter a city (optional)" />
+            <div class="location-input-wrap">
+              <input type="text" id="location-input" placeholder="Enter a city (optional)" />
+              <button type="button" id="location-clear-btn" class="location-clear-btn" aria-label="Clear city" hidden>&times;</button>
+            </div>
             <button type="button" id="use-my-location-btn">Use my location</button>
           </div>
         </div>

@@ -133,6 +133,19 @@ let currentResults = [];
 let userCoords = null;
 const locationInput = document.getElementById('location-input');
 const useMyLocationBtn = document.getElementById('use-my-location-btn');
+const locationClearBtn = document.getElementById('location-clear-btn');
+
+function updateLocationClearVisibility() {
+  locationClearBtn.hidden = locationInput.value.length === 0;
+}
+
+locationInput.addEventListener('input', updateLocationClearVisibility);
+
+locationClearBtn.addEventListener('click', () => {
+  locationInput.value = '';
+  updateLocationClearVisibility();
+  locationInput.focus();
+});
 
 async function geocodeCity(city) {
   const res = await fetch('/api/geocode', {
@@ -171,6 +184,7 @@ function runSearch() {
     setStatus('Enter a city or use your location first.');
     searchBtn.disabled = false;
     useMyLocationBtn.disabled = false;
+    updateRandomizeBtnState();
     return;
   }
 }
@@ -223,6 +237,7 @@ useMyLocationBtn.addEventListener('click', () => {
     (pos) => {
       userCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
       locationInput.value = '';
+      updateLocationClearVisibility();
       useMyLocationBtn.textContent = 'Location used';
       updateRandomizeBtnState();
     },
