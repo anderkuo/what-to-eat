@@ -25,32 +25,9 @@ function metersToText(m) {
   return miles < 0.1 ? Math.round(m) + ' m' : miles.toFixed(1) + ' mi';
 }
 
-function distanceMeters(lat1, lon1, lat2, lon2) {
-  const R = 6371000;
-  const toRad = d => d * Math.PI / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a = Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
 function getSelectedTypes() {
   return Array.from(document.querySelectorAll('input[name="place-type"]:checked'))
     .map(el => el.value);
-}
-
-function buildQuery(lat, lng, radius, types) {
-  const clauses = types.map(type =>
-    `node["amenity"="${type}"](around:${radius},${lat},${lng});
-     way["amenity"="${type}"](around:${radius},${lat},${lng});`
-  ).join('\n');
-
-  return `[out:json][timeout:25];
-(
-${clauses}
-);
-out center tags;`;
 }
 
 async function fetchRestaurants(lat, lng, radius, types) {
@@ -112,16 +89,39 @@ function renderRestaurants(places, options = {}) {
     name.textContent = place.name;
     li.appendChild(name);
 
-    const details = [
-      place.amenity ? formatLabel(place.amenity) : null,
-      place.cuisine ? formatLabel(place.cuisine) : null,
-      place.address,
-      hideDistance ? null : metersToText(place.distance)
-    ].filter(Boolean).join(' · ');
+    const meta = document.createElement('p');
 
-    if (details) {
-      const meta = document.createElement('p');
-      meta.textContent = details;
+    const leadingParts = [
+      place.amenity ? formatLabel(place.amenity) : null,
+      place.cuisine ? formatLabel(place.cuisine) : null
+    ].filter(Boolean);
+
+    if (leadingParts.length) {
+      meta.appendChild(document.createTextNode(leadingParts.join(', ')));
+    }
+
+    if (place.address) {
+      if (leadingParts.length) {
+        meta.appendChild(document.createTextNode(' · '));
+      }
+
+      const addressText = document.createTextNode(place.address);
+      meta.appendChild(addressText);
+
+      const link = document.createElement('a');
+      link.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name + ' ' + place.address)}`;
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+      link.className = 'map-chip';
+      link.textContent = 'Map';
+      meta.appendChild(link);
+    }
+
+    if (!hideDistance && place.distance != null) {
+      meta.appendChild(document.createTextNode(' · ' + metersToText(place.distance)));
+    }
+
+    if (meta.childNodes.length) {
       li.appendChild(meta);
     }
 
@@ -130,6 +130,8 @@ function renderRestaurants(places, options = {}) {
 }
 
 let currentResults = [];
+let currentHideDistance = false;
+let pickedPlaces = new Set();
 
 // Coordinates from "Use my location", kept only while the city box still
 // shows the place they point to. Any edit to the box invalidates them
@@ -242,6 +244,9 @@ async function searchByCoords(lat, lng, types, options = {}) {
   try {
     const places = await fetchRestaurants(lat, lng, radiusMeters, types);
     currentResults = places;
+    currentHideDistance = !!options.hideDistance;
+    pickedPlaces = new Set(); 
+    pickDisplay.hidden = true;
     updateRandomizeBtnState();
     setStatus(places.length ? `${places.length} found` : '');
     renderRestaurants(places, options);
@@ -312,28 +317,63 @@ useMyLocationBtn.addEventListener('click', () => {
 });
 const randomizeBtn = document.getElementById('randomize-btn');
 
+const pickDisplay = document.getElementById('pick-display');
+const pickName = document.getElementById('pick-name');
+const pickMeta = document.getElementById('pick-meta');
+
 function pickRandom() {
   if (!currentResults.length) {
     setStatus('Search first, then I can pick one for you.');
     return;
   }
 
-  const choice = currentResults[Math.floor(Math.random() * currentResults.length)];
-  highlightPick(choice);
-}
+  const pool = currentResults.filter(place => !pickedPlaces.has(place));
 
-function highlightPick(place) {
-  listEl.querySelectorAll('li').forEach(li => li.classList.remove('picked'));
-
-  const items = Array.from(listEl.querySelectorAll('li'));
-  const match = items.find(li => li.querySelector('strong')?.textContent === place.name);
-
-  if (match) {
-    match.classList.add('picked');
-    match.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  if (!pool.length) {
+    setStatus("You've seen every option! Search again for more.");
+    return;
   }
 
-  setStatus(`Today's pick: ${place.name}`);
+  const choice = pool[Math.floor(Math.random() * pool.length)];
+  pickedPlaces.add(choice);
+  showPick(choice, currentHideDistance);
+}
+
+function showPick(place, hideDistance) {
+  pickName.textContent = place.name;
+
+  pickMeta.innerHTML = '';
+
+  const leadingParts = [
+    place.amenity ? formatLabel(place.amenity) : null,
+    place.cuisine ? formatLabel(place.cuisine) : null
+  ].filter(Boolean);
+
+  if (leadingParts.length) {
+    pickMeta.appendChild(document.createTextNode(leadingParts.join(', ')));
+  }
+
+  if (place.address) {
+    if (leadingParts.length) {
+      pickMeta.appendChild(document.createTextNode(' · '));
+    }
+    pickMeta.appendChild(document.createTextNode(place.address));
+
+    const link = document.createElement('a');
+    link.href = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(place.name + ' ' + place.address)}`;
+    link.target = '_blank';
+    link.rel = 'noopener noreferrer';
+    link.className = 'map-chip';
+    link.textContent = 'Map';
+    pickMeta.appendChild(link);
+  }
+
+  if (!hideDistance && place.distance != null) {
+    pickMeta.appendChild(document.createTextNode(' · ' + metersToText(place.distance)));
+  }
+
+  pickDisplay.hidden = false;
+  pickDisplay.scrollIntoView({ behavior: 'smooth', block: 'center' });
 }
 
 randomizeBtn.addEventListener('click', pickRandom);
@@ -446,10 +486,6 @@ function blockScrollWhileOpen(e) {
 }
 document.addEventListener('wheel', blockScrollWhileOpen, { passive: false });
 document.addEventListener('touchmove', blockScrollWhileOpen, { passive: false });
-
-radiusSlider.addEventListener('input', () => {
-  radiusValueEl.textContent = radiusSlider.value;
-});
 
 searchBtn.addEventListener('click', runSearch);
 
