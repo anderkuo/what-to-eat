@@ -1,6 +1,7 @@
 const MILES_TO_METERS = 1609.34;
 const SEARCH_COOLDOWN_MS = 10000;
 const VOLUME_KEY = 'whatToEat.volume';
+const SEARCH_HISTORY_KEY = 'whatToEat.searchHistory';
 
 const statusEl = document.getElementById('restaurants-status');
 const listEl = document.getElementById('restaurants-list');
@@ -129,14 +130,12 @@ function renderRestaurants(places, options = {}) {
   });
 }
 
+let searchHistory = [];
 let currentResults = [];
 let currentHideDistance = false;
 let pickedPlaces = new Set();
-
-// Coordinates from "Use my location", kept only while the city box still
-// shows the place they point to. Any edit to the box invalidates them
-// (see invalidateLocationLock), so a search always matches what's on screen.
 let userCoords = null;
+
 
 const locationInput = document.getElementById('location-input');
 const useMyLocationBtn = document.getElementById('use-my-location-btn');
@@ -146,15 +145,10 @@ function updateLocationClearVisibility() {
   locationClearBtn.hidden = locationInput.value.length === 0;
 }
 
-// Search stays grayed out until there's a city in the box. Called after
-// every place that can change locationInput.value, whether the user typed
-// it or a click set it programmatically (which doesn't fire 'input').
 function updateSearchBtnState() {
   searchBtn.disabled = locationInput.value.trim().length === 0;
 }
 
-// Re-enables "Use my location" and drops the stored coordinates once the
-// city box no longer reflects them, i.e. the user typed in it or cleared it.
 function invalidateLocationLock() {
   userCoords = null;
   if (useMyLocationBtn.disabled) {
@@ -227,9 +221,6 @@ function runSearch() {
   useMyLocationBtn.disabled = true;
   randomizeBtn.disabled = true;
 
-  // userCoords is only ever set while the box still shows the place it
-  // points to (see invalidateLocationLock), so it's safe to prefer here
-  // for the more precise, distance-showing search.
   if (userCoords) {
     searchByCoords(userCoords.lat, userCoords.lng, types);
   } else {
@@ -237,9 +228,27 @@ function runSearch() {
   }
 }
 
+function loadSearchHistory() {
+  try {
+    const saved = localStorage.getItem(SEARCH_HISTORY_KEY);
+    if (saved) return JSON.parse(saved);
+  } catch {
+  }
+  return [];
+}
+
+function saveSearchHistory() {
+  try {
+    localStorage.setItem(SEARCH_HISTORY_KEY, JSON.stringify(searchHistory));
+  } catch {
+  }
+}
+
 async function searchByCoords(lat, lng, types, options = {}) {
   setStatus('Searching nearby…');
   const radiusMeters = Number(radiusSlider.value) * MILES_TO_METERS;
+  const radiusMiles = Number(radiusSlider.value);
+  const usedMyLocation = !!userCoords;
 
   try {
     const places = await fetchRestaurants(lat, lng, radiusMeters, types);
@@ -250,6 +259,15 @@ async function searchByCoords(lat, lng, types, options = {}) {
     updateRandomizeBtnState();
     setStatus(places.length ? `${places.length} found` : '');
     renderRestaurants(places, options);
+    addToSearchHistory({   
+      label: locationInput.value.trim() || 'My location',
+      usedMyLocation,
+      radiusMiles,
+      hideDistance: currentHideDistance,
+      results: places
+    });
+    searchHistory = searchHistory.slice(0, 5);
+    saveSearchHistory();
   } catch (err) {
     console.error(err);
     setStatus('Could not load restaurants. Please try again.');
@@ -321,6 +339,93 @@ const pickDisplay = document.getElementById('pick-display');
 const pickName = document.getElementById('pick-name');
 const pickMeta = document.getElementById('pick-meta');
 
+const searchHistoryDropdown = document.getElementById('search-history-dropdown');
+
+function renderSearchHistoryDropdown() {
+  searchHistoryDropdown.innerHTML = '';
+
+  if (!searchHistory.length) {
+    const empty = document.createElement('li');
+    empty.className = 'search-history-empty';
+    empty.textContent = 'No recent searches';
+    searchHistoryDropdown.appendChild(empty);
+    return;
+  }
+
+  searchHistory.forEach((entry, index) => {
+    const item = document.createElement('li');
+    item.className = 'search-history-item';
+    const radiusText = `${entry.radiusMiles} ${entry.radiusMiles === 1 ? 'mile' : 'miles'}`;
+    const locationTag = entry.usedMyLocation ? ' (location used)' : '';
+    item.textContent = `${entry.label}${locationTag} · ${radiusText}`;
+
+    item.addEventListener('mousedown', (e) => {
+      e.preventDefault(); 
+      loadFromHistory(index);
+    });
+    searchHistoryDropdown.appendChild(item);
+  });
+
+  const clearBtn = document.createElement('button');
+  clearBtn.type = 'button';
+  clearBtn.className = 'search-history-clear';
+  clearBtn.textContent = 'Clear history';
+  clearBtn.addEventListener('mousedown', (e) => {
+    e.preventDefault();
+    clearSearchHistory();
+  });
+  searchHistoryDropdown.appendChild(clearBtn);
+}
+
+function addToSearchHistory(entry) {
+  searchHistory = searchHistory.filter(h =>
+    !(h.label === entry.label &&
+      h.usedMyLocation === entry.usedMyLocation &&
+      h.radiusMiles === entry.radiusMiles)
+  );
+
+  searchHistory.unshift(entry);
+  searchHistory = searchHistory.slice(0, 5);
+  saveSearchHistory();
+}
+
+function loadFromHistory(index) {
+  const entry = searchHistory[index];
+  if (!entry) return;
+
+  locationInput.value = entry.label;
+  updateLocationClearVisibility();
+  invalidateLocationLock();
+  updateSearchBtnState();
+
+  radiusSlider.value = entry.radiusMiles;
+  radiusValueEl.value = entry.radiusMiles;
+  updateRadiusUnit(entry.radiusMiles);
+
+  currentResults = entry.results;
+  currentHideDistance = entry.hideDistance;
+  pickedPlaces = new Set();
+  pickDisplay.hidden = true;
+  updateRandomizeBtnState();
+  setStatus(entry.results.length ? `${entry.results.length} found` : '');
+  renderRestaurants(entry.results, { hideDistance: entry.hideDistance });
+}
+
+function clearSearchHistory() {
+  searchHistory = [];
+  saveSearchHistory();
+  renderSearchHistoryDropdown();
+}
+
+locationInput.addEventListener('focus', () => {
+  renderSearchHistoryDropdown();
+  searchHistoryDropdown.hidden = false;
+});
+
+locationInput.addEventListener('blur', () => {
+  searchHistoryDropdown.hidden = true;
+});
+
 function pickRandom() {
   if (!currentResults.length) {
     setStatus('Search first, then I can pick one for you.');
@@ -380,6 +485,7 @@ randomizeBtn.addEventListener('click', pickRandom);
 
 function startCooldown() {
   let secondsLeft = SEARCH_COOLDOWN_MS / 1000;
+  searchBtn.disabled = true;
   searchBtn.textContent = `Wait ${secondsLeft}s`;
 
   const interval = setInterval(() => {
@@ -393,6 +499,7 @@ function startCooldown() {
     }
   }, 1000);
 }
+
 
 
 /* Settings menu */
@@ -495,3 +602,4 @@ function updateRandomizeBtnState() {
 
 updateRandomizeBtnState();
 updateSearchBtnState();
+searchHistory = loadSearchHistory();
